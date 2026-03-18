@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Searcher 100M</title>
+    <style>
+        * { box-sizing: border-box; transition: 0.3s; }
+        body { 
+            background: #050505; 
+            color: #e0e0e0; 
+            font-family: 'JetBrains Mono', 'Fira Code', monospace; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0; 
+        }
+        .container { 
+            background: #0f0f0f; 
+            padding: 40px; 
+            border-radius: 20px; 
+            border: 1px solid #7c3aed; 
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.15); 
+            width: 95%; 
+            max-width: 600px; 
+            text-align: center; 
+        }
+        h1 { 
+            color: #a78bfa; 
+            margin-bottom: 5px; 
+            font-size: 1.8rem; 
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+        #status { 
+            font-size: 0.75rem; 
+            color: #6d28d9; 
+            margin-bottom: 25px; 
+            letter-spacing: 1px;
+        }
+        input { 
+            width: 100%; 
+            background: #1a1a1a; 
+            border: 2px solid #2d2d2d; 
+            color: #a78bfa; 
+            padding: 15px; 
+            border-radius: 10px; 
+            outline: none; 
+            margin-bottom: 15px; 
+            font-family: inherit;
+            font-size: 1rem;
+            text-align: center;
+        }
+        input:focus { 
+            border-color: #7c3aed; 
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
+        }
+        button { 
+            width: 100%; 
+            background: #7c3aed; 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 10px; 
+            font-weight: 800; 
+            font-size: 1rem;
+            cursor: pointer; 
+            text-transform: uppercase;
+        }
+        button:hover:not(:disabled) { 
+            background: #8b5cf6; 
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
+        }
+        button:disabled { 
+            background: #1a1a1a; 
+            color: #444;
+            border: 1px solid #333;
+            cursor: wait; 
+        }
+        #res { 
+            margin-top: 35px; 
+            text-align: left; 
+            word-break: break-all; 
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .pos-box {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #7c3aed;
+            margin-bottom: 15px;
+        }
+        .pos { color: #a78bfa; font-weight: bold; }
+        .ctx { color: #888; font-style: italic; }
+        .hl { 
+            color: #fff; 
+            background: rgba(124, 58, 237, 0.8);
+            padding: 2px 4px; 
+            border-radius: 4px; 
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Pi Searcher</h1>
+        <div id="status">Инициализация...</div>
+        
+        <input type="text" id="inp" placeholder="Введите последовательность..." spellcheck="false">
+        <button id="btn" onclick="search()" disabled>Загрузка данных...</button>
+        
+        <div id="res"></div>
+    </div>
+
+    <script>
+        let piData = "";
+        const files = ['pi1.txt', 'pi2.txt', 'pi3.txt', 'pi4.txt'];
+        const status = document.getElementById('status');
+        const btn = document.getElementById('btn');
+        const out = document.getElementById('res');
+
+        async function init() {
+            try {
+                let chunks = [];
+                for (let i = 0; i < files.length; i++) {
+                    const r = await fetch(files[i]);
+                    if (!r.ok) throw new Error();
+                    const text = await r.text();
+                    chunks.push(text);
+                    status.innerText = `Загрузка: ${i + 1} / 4`;
+                }
+                piData = chunks.join('');
+                status.innerText = "База 100 млн готова";
+                btn.innerText = "Найти";
+                btn.disabled = false;
+            } catch (e) {
+                status.innerText = "Ошибка загрузки данных";
+                status.style.color = "#ef4444";
+            }
+        }
+
+        function search() {
+            const q = document.getElementById('inp').value.trim();
+            if (!q || !piData) return;
+
+            const i = piData.indexOf(q);
+
+            if (i === -1) {
+                out.innerHTML = "<span style='color:#ef4444'>Не найдено</span>";
+                return;
+            }
+
+            const start = Math.max(0, i - 40);
+            const end = Math.min(piData.length, i + q.length + 40);
+            let context = piData.substring(start, end);
+            
+            const high = context.replace(q, `<span class="hl">${q}</span>`);
+
+            out.innerHTML = `
+                <div class="pos-box">Позиция: <span class="pos">${i}</span></div>
+                <div class="ctx">...${high}...</div>
+            `;
+        }
+
+        init();
+    </script>
+</body>
+</html>
